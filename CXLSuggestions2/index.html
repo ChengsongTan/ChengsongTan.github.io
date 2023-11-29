@@ -1,0 +1,274 @@
+<font size="+2">
+<h1>Comments for CXL.cache transaction layer specification--clarifications needed</h1>
+
+<!-- This is a comment and will not be rendered in the output. -->
+The version we are using:
+<url>  </url>
+ <a href="https://www.computeexpresslink.org/_files/ugd/0c1418_1798ce97c1e6438fba818d760905e43a.pdf">CXL 3.0 spec</a>
+
+
+ <p>Relevant sections in spec:<br />
+	<!-- </h2>
+	
+	<h2 id="redundant sections">Suggestion 1 </h2>
+	<h2>Our understanding of the rules and why certain parts are redundant</h2>
+	-->
+	<ul>
+		<li><a>3.2.5.2 Device/Host Snoop-GO-Data Assumptions<br /> </a></li>
+		<li><a>	3.2.5.3 Device/Host Snoop/WritePull Assumptions <br />
+		</a></li>
+		<li><a>	3.2.5.4 Snoop Responses and Data Transfer on CXL.cache Evicts <br />
+			</a></li>
+		<li><a>	3.2.5.5 Multiple Snoops to the Same Address<br />
+			</a></li>
+			<li><a>				3.2.5.14 General Assumptions<br />
+			</a></li>
+
+	  </ul>
+	
+   
+
+
+
+</p>
+	
+<h2>Table of Contents</h2>
+<ul>
+  <li><a href="#Suggestion1">Suggestion 1</a></li>
+  <li><a href="#Suggestion2">Suggestion 2</a></li>
+  <li><a href="#Suggestion3">Suggestion 3</a></li>
+  <li><a href="#Suggestion4">Suggestion 4</a></li>
+</ul>
+
+
+
+
+<h1 id="Suggestion1"> Suggestion 1 </h1>
+<!-- This is a comment and will not be rendered in the output. -->
+
+
+<p>Rule 11 in </p>
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy> 3.2.5.14 General Assumptions</font> </h3>
+	11. The Host must not send a second snoop request to an address until all responses, plus data if required, for the prior snoop are collected.
+<br />
+ </blockquote>
+ seems verbose as 
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy> 3.2.5.5 Multiple Snoops to the Same Address </font> </h3>
+The host is only allowed to have one snoop pending at a time per cacheline address per device. 
+The host must wait until it has received both the snoop response and all IWB data (if any) before dispatching the next snoop to that address.
+</blockquote>
+already says the same thing.
+
+<h2>Proposed Change </h2>
+<p>Remove rule 11 in section 3.2.5.14: </p>
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<s><h3>  <font color = navy> 3.2.5.14 General Assumptions</font> </h3>
+	11. The Host must not send a second snoop request to an address until all responses, plus data if required, for the prior snoop are collected.</s>
+<br />
+ </blockquote>
+
+<h1 id="Suggestion2"> Suggestion 2 </h1>
+According to table 3-18, a RdShared can only result in GO-S, not GO-E.
+<div class="centered-container">
+<img src="images/RdTableOld.png" alt="RdShared could get GO-E"
+					width="900" height="600">
+</div>
+<p>
+However, it may be beneficial to grant the device Exclusive 
+ownership so that it can silently upgrade to Modified state if needed.
+</p>
+<div class="centered-container">
+<img src="images/RdSharedExclusive.png" alt="RdShared could get GO-E"
+					width="900" height="600">
+</div>
+<p><font size="+2">In the above picture the requestor sends RdShared, 
+Host sends SnpData to the owner (in M state), and
+the owner responds with RspIFwdM. 
+Now we know the requestor will have the sole copy. 
+However the spec says RdShared can only get GO-S/I/Err back, not GO-E.</font></p>
+<h2>Proposed change:</h2>
+<p>Allowing RdShared to get E state.</p>
+
+
+<div class="centered-container">
+<img src="images/RdTableRevised.png" alt="RdShared could get GO-E"
+					width="900" height="600">
+</div>
+
+
+
+
+
+
+
+
+<h1 id="Suggestion3"> Suggestion 3</h1>
+<!-- <h2> 
+	<h2>Summary of the suggestion: </h2>
+-->
+
+
+Section 3.2.5.2 allows us to delete half of section 3.2.5.3.
+
+
+
+<h2> Details </h2>
+Here is the second part of 3.2.5.3:
+
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+
+<h3>  <font color = navy> 3.2.5.3 Device/Host Snoop/WritePull Assumptions </font> </h3>
+
+...
+the host may not launch a WritePull for a write until the host has received the snoop response (including data in case of Rsp*Fwd*) for any snoops to the pending writes address. Any violation of these requirements will mean that the Bogus field on the D2H Data channel will be unreliable. 
+</blockquote>
+We believe that the only purpose of this part of the rule is to disallow examples such as the following:
+
+<div class="centered-container">
+<img src="images/RdEvictAtomic2.png" alt="Rd and Evict should 
+				     not interrupt each other 2"
+					width="900" height="600">
+</div>
+In this example, a RdOwn request from device 2 is issued in parallel with a DirtyEvict from device 1. The host receives the RdOwn first, and responds sending a SnpInv to device 1. It then receives the DirtyEvict, and responds by sending GO_WritePull to device 1.
+
+<p>
+However, this example is already disallowed by the following text in rule
+3.2.5.2:
+</p>
+<blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3> <font color = navy> 3.2.5.2 Device/Host Snoop-GO-Data Assumptions </font> </h3>
+...
+When the host is sending a snoop to the device, the requirement is that no GO response will be sent to any requests with that address in the device until after the Host has received a response for the snoop and all implicit writeback (IWB) data (dirty data forwarded in response to a snoop) has been received. ...
+
+</blockquote>
+We believe the CXL specification would be clearer if either:
+
+<ul>
+	<li>the redundant text in 3.2.5.3 was removed, or</li>
+
+	<li>the text was adapted to explicitly acknowledge that the already-stated restriction in 3.2.5.2 is being repeated.</li>
+
+</ul> 
+
+<h2>Proposed change:</h2>
+<p>
+	Concretely, we propose the following change to the specification:
+</p>
+<blockquote>
+<h3>  <font color = navy> 3.2.5.3 Device/Host Snoop/WritePull Assumptions </font> </h3>
+The device requires that the host cannot have both a WritePull and H2D Snoop active on CXL.cache to a given 64-byte address. The host may not launch a snoop to a 64- byte address until all WritePull data from that address has been received by the host. <s>Conversely, the host may not launch a WritePull for a write until the host has received the snoop response (including data in case of Rsp*Fwd*) for any snoops to the pending writes address. Any violation of these requirements will mean that the Bogus field on the D2H Data channel will be unreliable. </s> 
+
+</blockquote>
+
+ <h1 id="Suggestion4"> Suggestion 4</h1>
+ <!-- <h2> <h2>Summary of the suggestion: </h2> -->
+
+
+Section 3.2.5.4 can be removed.
+ 
+ 
+ <h2> Details </h2>
+ 
+ 
+ <p>Here is section 3.2.5.4:</p>
+  <blockquote cite= 
+ "https://www.computeexpresslink.org/download-the-specification
+ "> 
+	 <font color= navy>3.2.5.4 Snoop Responses and Data 
+		 Transfer on CXL.cache Evicts </font> <br />
+ ......If a device Evict transaction has been issued on the CXL.cache D2H request channel, but has not yet processed its WritePull from the host, and a snoop hits the writeback, the device must track this snoop hit if cache state is changed, which excludes the case when SnpCur results in a RspVFwdV response. When the device begins to process the WritePull, if snoop hit is tracked the device must set the Bogus field in all the D2H data messages sent to the host.	
+ The intent is to communicate to the host 
+ that the request data was already sent as IWB data, so the data from the 
+ Evict is potentially stale.
+ </blockquote>
+ <p> 
+<!--
+ From what we understand it, this can be rephrased as follows:</p>
+ 
+ <p>Owner must track (interrupting) snoop hit if cache state is changed. 
+ It must set the Bogus field in 
+ all the <b>(later, not including the current) D2H data 
+ messages </b> sent to the host. </p>
+ <p> -->
+
+ This rule applies to transaction sequences of two forms,
+ and its purpose is to mandate the bogus field to be set in 
+certain D2H Data messages.
+The first form of transaction sequences is the following:</p>
+ <div class="centered-container">
+ <img src="images/3254.png" alt="Rd and Evict should 
+					  not interrupt each other 2"
+					 width="900" height="600">
+ </div>
+ 
+ <p>However, we observe that transaction sequences like this
+	have already been disallowed under 3.2.5.2, as
+ the GO_WritePull will not be sent until after the snoop returns Data and response.
+ </p>
+ 
+ <p>
+	The second form of transaction sequence is the following:
+	</p>
+	<div class="centered-container">
+		<img src="images/3254_4.png" alt="Rd and Evict should 
+							 not interrupt each other 2"
+							width="900" height="600">
+		</div>
+	<p>
+In this situation,	
+we propose to allow the host to send GO_WritePull_Drop instead of
+GO_WritePull:
+ </p>
+ 
+ <div class="centered-container">
+ <img src="images/3254_3.png" alt="Rd and Evict should 
+					  not interrupt each other 2"
+					 width="900" height="600">
+ </div>
+ 
+ <p>
+because this means that no data will be sent and hence there is
+	no need to require the bogus field to be set.
+ </p>
+ <h2>Proposed change</h2>
+ <p>First, we propose to update table 3-18, allowing DirtyEvict to get GO_WritePull_Drop, to accommodate the above transaction sequence.
+ </p>
+ <div class="centered-container">
+ <img src="images/table318.png" alt="Rd and Evict should 
+					  not interrupt each other 2"
+					 width="900" height="600">
+ </div>
+ <p>We also propose to 
+	delete 3.2.5.4 entirely:
+ </p>
+ 
+ <p>
+ 
+  <blockquote cite= 
+ "https://www.computeexpresslink.org/download-the-specification
+ "> 
+
+ 
+ 
+ <s> <h3> <font color = navy> 3.2.5.4 Snoop Responses and Data Transfer on CXL.cache Evicts </font> </h3>
+ To snoop cache evictions (for example, DirtyEvict) and maintain an orderly transfer of snoop ownership from the device to the host, cache evictions on CXL.cache must adhere to the following protocol. If a device Evict transaction has been issued on the CXL.cache D2H request channel, but has not yet processed its WritePull from the host, and a snoop hits the writeback, the device must track this snoop hit if cache state is changed, which excludes the case when SnpCur results in a RspVFwdV response. When the device begins to process the WritePull, if snoop hit is tracked the device must set the Bogus field in all the D2H data messages sent to the host. The intent is to communicate to the host that the request data was already sent as IWB data, so the data from the Evict is potentially stale. </s>
+ 
+ 
+ </p> <!-- Additional content abbreviated for brevity, but you can add in the details. -->
+ 
+  </blockquote>
+ 
+
+</font>
