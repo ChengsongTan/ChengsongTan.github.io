@@ -1,0 +1,90 @@
+<font size="+2">
+<h1>Comments for CXL.cache transaction layer specification--clarifications needed (3) </h1>
+
+<!-- This is a comment and will not be rendered in the output. -->
+The version we are using:
+<url>  </url>
+ <a href="https://www.computeexpresslink.org/_files/ugd/0c1418_1798ce97c1e6438fba818d760905e43a.pdf">CXL 3.0 spec</a>
+
+
+ <p>Relevant sections in spec:<br />
+	<!-- </h2>
+	
+	<h2 id="redundant sections">Suggestion 1 </h2>
+	<h2>Our understanding of the rules and why certain parts are redundant</h2>
+	-->
+	<ul>
+		<li><a>3.2.4.2.13 CLFlush <br /> </a></li>
+		<li><a>	9.8.2 Device Responsibilities<br />
+			</a></li>
+	  </ul>
+	
+   
+
+
+
+</p>
+	
+<h2>Table of Contents</h2>
+<ul>
+  <li><a href="#Suggestion1">Suggestion 1</a></li>
+</ul>
+
+
+
+
+<h1 id="Suggestion1"> Suggestion 1 </h1>
+<!-- This is a comment and will not be rendered in the output. -->
+
+Section 3.2.4.2.13 describes the functionality of the CLFlush request:
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy> 3.2.4.2.13 CLFlush </font> </h3>
+This is a request to the Host to invalidate the cacheline specified in the address field. The typical response is GO-I which is sent from the Host upon completion in memory.
+However, the Host may keep tracking the cacheline in Shared state if the Core has issued a Monitor to an address belonging in the cacheline. Thus, the Device that exposes an HDM-D region must not rely on CLFlush/GO-I as a sufficient condition for which to flip a cacheline in the HDM-D region from Host to Device Bias mode. Instead, the Device must initiate RdOwnNoData and receive an H2D Response of GO-E before it updates its Bias Table to Device Bias mode to allow subsequent cacheline access without notifying the Host.
+Under error conditions, a CLFlush request may receive the line in the Error (GO-Err) state. The device is responsible for handling the error appropriately.
+</blockquote>
+This block of text does not explicitly mention whether dirty cacheline data is written back to the host or not.
+It seems that the only effect of a CLFlush is an invalidation to the cacheline. The transaction diagram of Read0 requests also indicate this:
+<div class="centered-container">
+	<img src="images/read0.png" alt="Read0 (CLFlush) Transaction Diagram"
+						width="900" height="600">
+	</div>
+The problem is if the cacheline has been modified and the data has not been returned, then incoherence arises.
+Is the data sent together with the CLFlush request, and therefore no Data message needs to be sent separately?
+<blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3> <font color = navy> 9.8.2 Device Responsibilities </font> </h3>
+<p>If a device supports GPF,...</p>
+<p>Upon receiving a GPF Phase 1 request message, a CXL device shall execute the following steps in the specified order:</p>
+<p>...</p>
+<p>3. If CXL.cache capable and Payload[1]=1, write back all modified lines in the device cache. The memory destination may be local or remote.</p>
+<p>...</p>
+<p>
+The device must write back all dirty lines that are not mapped to its local HDM and may be of persistent type. Each such dirty line must be written back to the destination HDM in two steps:
+</p>
+
+
+<ul>
+	<li>i. Issue DirtyEvict request to the host (see Section 3.2.4.2.15).</li>
+	<li>ii. Issue CLFlush request to the host (see Section 3.2.4.2.13).</li>
+  </ul>
+
+</blockquote>
+This section indicates that a CLFlush with dirty data requires a DirtyEvict beforehand.
+Under what circumstances can a device with modified data send a CLFlush without a DirtyEvict?
+If it should always send DirtyEvict, then this should have been mentioned in section 3.2.4.2.13.
+
+
+<h2>Proposed Change </h2>
+<p>We suggest appending the following text (in boldface) to the section 3.2.4.2.13:</p>
+
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy>3.2.4.2.13 CLFlush </font> </h3>
+This is a request to the Host to invalidate the cacheline specified in the address field. The typical response is GO-I which is sent from the Host upon completion... handling the error appropriately.
+<b>If the cacheline contains dirty data, then it must send a DirtyEvict before this CLFlush unless the memory is private memory of the device, not part of the CXL domain.</b>
+</blockquote>
