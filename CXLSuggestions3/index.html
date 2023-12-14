@@ -75,16 +75,18 @@ The device must write back all dirty lines that are not mapped to its local HDM 
 </blockquote>
 This section indicates that a CLFlush with dirty data requires a DirtyEvict beforehand.
 Under what circumstances can a device with modified data send a CLFlush without a DirtyEvict?
-If it should always send DirtyEvict, then this should have been mentioned in section 3.2.4.2.13.
+What sort of memory region should this be for the device to not write data back? Presumably when
+the memory is native to that device?
+If this is a type-1 device sending a CLFlush (which does not involve CXL.mem), how does device tell which
+memory region it is flushing?
 
-
-<h2>Proposed Change </h2>
-<p>We suggest appending the following text (in boldface) to the section 3.2.4.2.13:</p>
+<h2>Tentative suggestion </h2>
+<p>One potential change to the section 3.2.4.2.13 might be adding the text in boldface:</p>
 
  <blockquote cite= 
 "https://www.computeexpresslink.org/download-the-specification
 "> 
 <h3>  <font color = navy>3.2.4.2.13 CLFlush </font> </h3>
 This is a request to the Host to invalidate the cacheline specified in the address field. The typical response is GO-I which is sent from the Host upon completion... handling the error appropriately.
-<b>If the cacheline contains dirty data, then it must send a DirtyEvict before this CLFlush unless the memory is private memory of the device, not part of the CXL domain.</b>
+<b>If the cacheline contains dirty data, then it must send a DirtyEvict before this CLFlush unless the memory is native to the device and in Device bias.</b>
 </blockquote>
