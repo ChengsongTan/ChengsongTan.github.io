@@ -1,0 +1,67 @@
+<font size="+2">
+<h1>Comments for CXL.cache transaction layer specification--clarifications needed (4) </h1>
+
+<!-- This is a comment and will not be rendered in the output. -->
+The version we are using:
+<url>  </url>
+ <a href="https://www.computeexpresslink.org/_files/ugd/0c1418_1798ce97c1e6438fba818d760905e43a.pdf">CXL 3.0 spec</a>
+
+
+ <p>Relevant sections in spec:<br />
+	<!-- </h2>
+	
+	<h2 id="redundant sections">Suggestion 1 </h2>
+	<h2>Our understanding of the rules and why certain parts are redundant</h2>
+	-->
+	<ul>
+		<li><a>3.2.4.2.4 CXL.cache Write <br /> </a></li>
+	  </ul>
+	
+   
+
+
+
+</p>
+	
+<h2>Table of Contents</h2>
+<ul>
+  <li><a href="#Suggestion1">Suggestion 1</a></li>
+</ul>
+
+
+
+
+<h1 id="Suggestion1"> Suggestion 1 </h1>
+<!-- This is a comment and will not be rendered in the output. -->
+
+Section 3.2.4.2.4 CXL.cache Write says:
+ <blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy> 3.2.4.2.4 CLFlush </font> </h3>
+...
+The Host considers a write to be done once it has received all 64 bytes of data, and has sent the GO-I response message.
+...
+</blockquote>
+This leaves the impression that GO and the pulled Data always come in pairs. However, there is one exception where CleanEvictNoData 
+does not require a piece of Data to be returned. In that case, just the GO-I being sent would suffice as a sign of transaction completeness for the Host.
+
+<h2>Tentative suggestion </h2>
+
+We propose the following text to be added to avoid any confusion about CleanEvictNoData's transaction flows (and when it was considered complete):
+<blockquote cite= 
+"https://www.computeexpresslink.org/download-the-specification
+"> 
+<h3>  <font color = navy>Section 3.2.4.2.4 CXL.cache Write </font> </h3>
+...
+The Host considers a write to be done once it has received all 64 bytes of data, and has sent the GO-I response message.
+<b>In the case where only a GO-I is required (i.e. CleanEvictNoData), 
+	just the GO message being sent would be enough for the Host to consider a write done.</b>
+	...
+</blockquote>
+
+
+
+
+
+
