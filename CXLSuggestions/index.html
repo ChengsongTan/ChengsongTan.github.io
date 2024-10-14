@@ -153,7 +153,8 @@ However, this example is already disallowed by the following text in rule
 When the host is sending a snoop to the device, the requirement is that no GO response will be sent to any requests with that address in the device until after the Host has received a response for the snoop and all implicit writeback (IWB) data (dirty data forwarded in response to a snoop) has been received. ...
 
 </blockquote>
-Since GO and WritePull always come in pairs, and both sections mentioinsed the restriction on both types of messages, We believe the CXL specification would be clearer if either:
+Whenever a WritePull is sent, a GO is always accompanying, either as a separate message (in the case of WrInv), or as a combined message (WrCur, ItoMWr, DirtyEvict, CleanEvict).
+Therefore section 3.2.5.3 is implied by 3.2.5.2. We believe the CXL specification would be clearer if either:
 
 <ul>
 	<li>the redundant text in 3.2.5.3 was removed, or</li>
