@@ -77,8 +77,8 @@ This section indicates that a CLFlush with dirty data requires a DirtyEvict befo
 Under what circumstances can a device with modified data send a CLFlush without a DirtyEvict?
 What sort of memory region should this be for the device to not write data back? Presumably when
 the memory is native to that device?
-If this is a type-1 device sending a CLFlush (which does not involve CXL.mem), how does device tell which
-memory region it is flushing?
+<!--If this is a type-1 device sending a CLFlush (which does not involve CXL.mem), how does device tell which
+memory region it is flushing? -->
 
 <h2>Tentative suggestion </h2>
 <p>One potential change to the section 3.2.4.2.13 might be adding the text in boldface:</p>
